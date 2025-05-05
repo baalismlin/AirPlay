@@ -1,0 +1,149 @@
+GET /info RTSP/1.0
+X-Apple-ProtocolVersion: 1
+Content-Length: 70
+Content-Type: application/x-apple-binary-plist
+CSeq: 0
+DACP-ID: A94AAB413346661D
+Active-Remote: 2450365198
+User-Agent: AirPlay/695.5.1
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>qualifier</key>
+	<array>
+		<string>txtAirPlay</string>
+	</array>
+</dict>
+</plist>
+
+RTSP/1.0 200 OK
+Date: Tue, 22 Apr 2025 18:05:36 GMT
+Content-Length: 1472
+Content-Type: application/x-apple-binary-plist
+Server: AirTunes/775.3.1
+CSeq: 0
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>psi</key>
+	<string>CA6DC14A-550B-4EDB-BFE0-300E0F501CF0</string>
+	<key>supportedAudioFormatsExtended</key>
+	<dict>
+		<key>bufferStream</key>
+		<array>
+			<integer>21</integer>
+			<integer>22</integer>
+			<integer>23</integer>
+		</array>
+	</dict>
+	<key>playbackCapabilities</key>
+	<dict>
+		<key>supportsOfflineHLS</key>
+		<false/>
+		<key>supportsUIForAudioOnlyContent</key>
+		<true/>
+		<key>supportsFPSSecureStop</key>
+		<true/>
+		<key>supportsStopAtEndOfQueue</key>
+		<false/>
+		<key>supportsAirPlayVideoWithSharePlay</key>
+		<true/>
+	</dict>
+	<key>canRecordScreenStream</key>
+	<true/>
+	<key>statusFlags</key>
+	<integer>516</integer>
+	<key>keepAliveSendStatsAsBody</key>
+	<true/>
+	<key>protocolVersion</key>
+	<string>1.1</string>
+	<key>name</key>
+	<string>Feng's MacBook</string>
+	<key>volumeControlType</key>
+	<integer>4</integer>
+	<key>senderAddress</key>
+	<string>192.168.0.112:54650</string>
+	<key>deviceID</key>
+	<string>F0:18:98:47:2E:F4</string>
+	<key>pi</key>
+	<string>01fde355-990a-47da-a01f-6a14421f9d04</string>
+	<key>screenDemoMode</key>
+	<false/>
+	<key>initialVolume</key>
+	<real>-20.0</real>
+	<key>featuresEx</key>
+	<string>1c9/St5PF7g2IQQ</string>
+	<key>txtAirPlay</key>
+	<data>
+		BWFjdD0yBWFjbD0wGmRldmljZWlkPUYwOjE4Ojk4OjQ3OjJFOkY0E2ZleD0xYzkvU3Q1UEY3ZzJJUVEeZmVhdHVyZXM9MHg0QTdGQ0ZENSwweEI4MTc0RkRFB3JzZj0weDgLZmxhZ3M9MHgyMDQoZ2lkPTE0MTFFMTVBLUJBQUItNEU0Qi1BNzZDLUYzNDk2RDc4RUJDNQVpZ2w9MAZnY2dsPTAUbW9kZWw9TWFjQm9va1BybzE1LDEEYXQ9NA1wcm90b3ZlcnM9MS4xJ3BpPTAxZmRlMzU1LTk5MGEtNDdkYS1hMDFmLTZhMTQ0MjFmOWQwNChwc2k9Q0E2REMxNEEtNTUwQi00RURCLUJGRTAtMzAwRTBGNTAxQ0YwQ3BrPWQyMDkzMGVhNmE3NmQ4YTZhNGQ2OGU5MzljNmJlYjM5MjIxNmE5NDA2YmM2ZjYxODcxYWE0YWFjNGQzNDhiOTAPc3JjdmVycz03NzUuMy4x
+	</data>
+	<key>supportedFormats</key>
+	<dict>
+		<key>lowLatencyAudioStream</key>
+		<integer>0</integer>
+		<key>screenStream</key>
+		<integer>21235712</integer>
+		<key>audioStream</key>
+		<integer>21235712</integer>
+		<key>bufferStream</key>
+		<integer>14680064</integer>
+	</dict>
+	<key>sourceVersion</key>
+	<string>775.3.1</string>
+	<key>model</key>
+	<string>MacBookPro15,1</string>
+	<key>pk</key>
+	<data>
+		0gkw6mp22Kak1o6TnGvrOSIWqUBrxvYYcapKrE00i5A=
+	</data>
+	<key>macAddress</key>
+	<string>F0:18:98:47:2E:F4</string>
+	<key>osBuildVersion</key>
+	<string>23H420</string>
+	<key>receiverHDRCapability</key>
+	<string>4k60</string>
+	<key>features</key>
+	<integer>-5181585030115242027</integer>
+</dict>
+</plist>
+
+POST /pair-verify RTSP/1.0
+X-Apple-AbsoluteTime: 767037936
+X-Apple-HKP: 8
+X-Apple-Client-Name: jojo
+X-Apple-PD: 1
+Content-Length: 37
+Content-Type: application/octet-stream
+CSeq: 1
+DACP-ID: A94AAB413346661D
+Active-Remote: 2450365198
+User-Agent: AirPlay/695.5.1
+
+RTSP/1.0 200 OK
+Date: Tue, 22 Apr 2025 18:05:36 GMT
+Content-Length: 121
+Content-Type: application/octet-stream
+Server: AirTunes/775.3.1
+CSeq: 1
+
+POST /pair-verify RTSP/1.0
+X-Apple-AbsoluteTime: 767037936
+X-Apple-HKP: 8
+X-Apple-Client-Name: jojo
+X-Apple-PD: 1
+Content-Length: 87
+Content-Type: application/octet-stream
+CSeq: 2
+DACP-ID: A94AAB413346661D
+Active-Remote: 2450365198
+User-Agent: AirPlay/695.5.1
+
+RTSP/1.0 200 OK
+Date: Tue, 22 Apr 2025 18:05:36 GMT
+Content-Length: 3
+Content-Type: application/octet-stream
+Server: AirTunes/775.3.1
+CSeq: 2
+后面的数据被加密了
