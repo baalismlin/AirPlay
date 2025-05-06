@@ -5,8 +5,15 @@ import net.i2p.crypto.eddsa.EdDSAEngine
 import net.i2p.crypto.eddsa.EdDSAPublicKey
 import net.i2p.crypto.eddsa.spec.EdDSANamedCurveTable
 import net.i2p.crypto.eddsa.spec.EdDSAPublicKeySpec
-import org.bouncycastle.crypto.agreement.X25519Agreement
-import org.bouncycastle.crypto.params.X25519PublicKeyParameters
+import org.example.airplay.common.HEADER_CONTENT_LENGTH
+import org.example.airplay.common.HEADER_CONTENT_TYPE
+import org.example.airplay.common.HEADER_CSEQ
+import org.example.airplay.common.HEADER_PUBLIC
+import org.example.airplay.common.HEADER_SERVER
+import org.example.airplay.common.HEADER_TRANSPORT
+import org.example.airplay.common.METHOD_GET
+import org.example.airplay.common.METHOD_POST
+import org.example.airplay.common.RTSP_PORT
 import org.slf4j.LoggerFactory
 import org.whispersystems.curve25519.Curve25519
 import java.io.BufferedInputStream
@@ -16,16 +23,11 @@ import java.io.InputStream
 import java.net.ServerSocket
 import java.net.Socket
 import java.nio.charset.StandardCharsets
-import java.security.KeyFactory
-import java.security.KeyPairGenerator
 import java.security.MessageDigest
-import java.security.spec.NamedParameterSpec
-import java.security.spec.XECPublicKeySpec
 import java.util.*
 import java.util.Base64
 import java.util.concurrent.Executor
 import javax.crypto.Cipher
-import javax.crypto.KeyAgreement
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
@@ -37,7 +39,7 @@ class RTSPServer(private val sessionManager: SessionManager, private val executo
         executor.execute {
             try {
                 serverSocket = ServerSocket(RTSP_PORT)
-                LOGGER.info("RTSP server listening on port $RTSP_PORT")
+                LOGGER.info("RTSP server listening on port ${RTSP_PORT}")
 
                 while (true) {
                     val clientSocket: Socket = serverSocket.accept()

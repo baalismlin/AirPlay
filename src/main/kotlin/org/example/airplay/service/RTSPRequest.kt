@@ -1,6 +1,11 @@
 package org.example.airplay.service
 
-import com.dd.plist.NSDictionary
+import org.example.airplay.common.HEADER_ACTIVE_REMOTE
+import org.example.airplay.common.HEADER_APPLE_CHALLENG
+import org.example.airplay.common.HEADER_CONTENT_LENGTH
+import org.example.airplay.common.HEADER_CONTENT_TYPE
+import org.example.airplay.common.HEADER_CSEQ
+import org.example.airplay.common.HEADER_TRANSPORT
 
 data class RTSPRequest(var method: String = "",
                        var uri: String = "",
