@@ -2,11 +2,7 @@ package org.example.airplay.service
 
 data class RTSPResponse(val headers: Map<String, String> = mapOf(), val payload: ByteArray? = null) {
     private lateinit var responseCode: String
-
-    fun responseCode(responseCode: String): RTSPResponse {
-        this.responseCode = responseCode
-        return this
-    }
+    private val version = "RTSP/1.0"
 
     fun ok(): RTSPResponse {
         this.responseCode = "200 OK"
@@ -14,12 +10,12 @@ data class RTSPResponse(val headers: Map<String, String> = mapOf(), val payload:
     }
 
     fun notImplemented(): RTSPResponse {
-        this.responseCode ="501 Not Implemented"
+        this.responseCode = "501 Not Implemented"
         return this
     }
 
     fun unauthorized(): RTSPResponse {
-        this.responseCode ="401 Unauthorized"
+        this.responseCode = "401 Unauthorized"
         return this
     }
 
@@ -29,19 +25,17 @@ data class RTSPResponse(val headers: Map<String, String> = mapOf(), val payload:
     }
 
     fun build(): ByteArray {
-        val response = buildString {
-            append("RTSP/1.0 $responseCode\r\n")
+        return buildResponse().toByteArray() + (payload ?: byteArrayOf())
+    }
+
+    private fun buildResponse(): String {
+        // \r\n is HTTP specification
+        return buildString {
+            append("$version $responseCode\r\n")
             headers.forEach {
                 append("${it.key}: ${it.value}\r\n")
             }
             append("\r\n")
-        }
-
-
-        return if (payload != null) {
-            response.toByteArray() + payload
-        } else {
-            response.toByteArray()
         }
     }
 

@@ -1,19 +1,11 @@
 package org.example.airplay.service
 
-import com.dd.plist.*
 import net.i2p.crypto.eddsa.EdDSAEngine
 import net.i2p.crypto.eddsa.EdDSAPublicKey
 import net.i2p.crypto.eddsa.spec.EdDSANamedCurveTable
 import net.i2p.crypto.eddsa.spec.EdDSAPublicKeySpec
-import org.example.airplay.common.HEADER_CONTENT_LENGTH
-import org.example.airplay.common.HEADER_CONTENT_TYPE
-import org.example.airplay.common.HEADER_CSEQ
-import org.example.airplay.common.HEADER_PUBLIC
-import org.example.airplay.common.HEADER_SERVER
-import org.example.airplay.common.HEADER_TRANSPORT
-import org.example.airplay.common.METHOD_GET
-import org.example.airplay.common.METHOD_POST
-import org.example.airplay.common.RTSP_PORT
+import org.example.airplay.common.Constants
+import org.example.airplay.util.PropertyHelper
 import org.slf4j.LoggerFactory
 import org.whispersystems.curve25519.Curve25519
 import java.io.BufferedInputStream
@@ -25,7 +17,6 @@ import java.net.Socket
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.util.*
-import java.util.Base64
 import java.util.concurrent.Executor
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
@@ -38,8 +29,8 @@ class RTSPServer(private val sessionManager: SessionManager, private val executo
     fun start() {
         executor.execute {
             try {
-                serverSocket = ServerSocket(RTSP_PORT)
-                LOGGER.info("RTSP server listening on port ${RTSP_PORT}")
+                serverSocket = ServerSocket(Constants.RTSP_PORT)
+                LOGGER.info("RTSP server listening on port ${Constants.RTSP_PORT}")
 
                 while (true) {
                     val clientSocket: Socket = serverSocket.accept()
@@ -71,6 +62,7 @@ class RTSPServer(private val sessionManager: SessionManager, private val executo
                 if (lines.isEmpty()) return
 
                 val request = rtspRequest(lines, input)
+                LOGGER.info("RTSP Request: $request")
 
                 val sessionId = request.getSessionId()
                 var session: AirPlaySession? = null
@@ -78,21 +70,33 @@ class RTSPServer(private val sessionManager: SessionManager, private val executo
                     session = sessionManager.getOrGenerate(sessionId)
                 }
 
-                val response = if (request.method == METHOD_GET && request.uri == "/info") {
+                val response = if (request.method == Constants.METHOD_GET && request.uri == "/info") {
                     handleInfo(request)
-                } else if (request.method == METHOD_POST && request.uri == "/pair-setup" && session != null) {
+                } else if (request.method == Constants.METHOD_POST && request.uri == "/pair-setup" && session != null) {
                     handlePairSetup(request, session)
-                } else if (request.method == METHOD_POST && request.uri == "/pair-verify" && session != null) {
+                } else if (request.method == Constants.METHOD_POST && request.uri == "/pair-verify" && session != null) {
                     handlePairVerify(request, session)
                 } else {
                     handleElse(request)
                 }
 
+                LOGGER.info("RTSP Response: $response")
                 output.write(response.build())
                 output.flush()
             }
 
         }
+    }
+
+    private fun handleInfo(request: RTSPRequest): RTSPResponse {
+        val payload = PropertyHelper.infoBytes()
+        val headers = mapOf(
+            Constants.HEADER_CSEQ to request.getCSeq(),
+            Constants.HEADER_CONTENT_LENGTH to payload.size.toString(),
+            Constants.HEADER_CONTENT_TYPE to Constants.APPLICATION_TYPE_PLIST,
+            Constants.HEADER_SERVER to Constants.SERVER
+        )
+        return RTSPResponse(headers, payload).ok()
     }
 
     private fun handlePairVerify(request: RTSPRequest, session: AirPlaySession): RTSPResponse {
@@ -135,10 +139,10 @@ class RTSPServer(private val sessionManager: SessionManager, private val executo
             val payload = selfPubBytes + encryptedSignature
 
             val headers = mapOf(
-                HEADER_CSEQ to request.getCSeq(),
-                HEADER_CONTENT_LENGTH to payload.size.toString(),
-                HEADER_CONTENT_TYPE to "application/octet-stream",
-                HEADER_SERVER to "AirTunes/220.68"
+                Constants.HEADER_CSEQ to request.getCSeq(),
+                Constants.HEADER_CONTENT_LENGTH to payload.size.toString(),
+                Constants.HEADER_CONTENT_TYPE to "application/octet-stream",
+                Constants.HEADER_SERVER to "AirTunes/220.68"
             )
 
             return RTSPResponse(headers, payload).ok()
@@ -168,8 +172,8 @@ class RTSPServer(private val sessionManager: SessionManager, private val executo
 
 
             val headers = mapOf(
-                HEADER_CSEQ to request.getCSeq(),
-                HEADER_SERVER to "AirTunes/220.68"
+                Constants.HEADER_CSEQ to request.getCSeq(),
+                Constants.HEADER_SERVER to "AirTunes/220.68"
             )
 
             return RTSPResponse(headers).ok()
@@ -177,155 +181,24 @@ class RTSPServer(private val sessionManager: SessionManager, private val executo
 
     }
 
-    fun initCipher(sharedSecret: ByteArray): Cipher {
-        val sha512Digest = MessageDigest.getInstance("SHA-512")
-        sha512Digest.update("Pair-Verify-AES-Key".toByteArray(StandardCharsets.UTF_8))
-        sha512Digest.update(sharedSecret)
-        val sharedSecretSha512AesKey = Arrays.copyOfRange(sha512Digest.digest(), 0, 16)
-
-        sha512Digest.update("Pair-Verify-AES-IV".toByteArray(StandardCharsets.UTF_8))
-        sha512Digest.update(sharedSecret)
-        val sharedSecretSha512AesIV = Arrays.copyOfRange(sha512Digest.digest(), 0, 16)
-
-        val aesCtr128Encrypt = Cipher.getInstance("AES/CTR/NoPadding")
-        aesCtr128Encrypt.init(
-            Cipher.ENCRYPT_MODE,
-            SecretKeySpec(sharedSecretSha512AesKey, "AES"),
-            IvParameterSpec(sharedSecretSha512AesIV)
-        )
-        return aesCtr128Encrypt
-    }
-
-    fun handlePairSetup(request: RTSPRequest, session: AirPlaySession): RTSPResponse {
+    private fun handlePairSetup(request: RTSPRequest, session: AirPlaySession): RTSPResponse {
         if (request.payloadBytes?.size != 32) {
             return handleElse(request)
         }
-            val payload = (session.keyPair.public as EdDSAPublicKey).abyte
-            val headers = mapOf(
-                HEADER_CSEQ to request.getCSeq(),
-                HEADER_CONTENT_LENGTH to payload.size.toString(),
-                HEADER_CONTENT_TYPE to "application/octet-stream",
-                HEADER_SERVER to "AirTunes/220.68"
-            )
-            return RTSPResponse(headers, payload).ok()
-    }
-
-    fun rtspRequest(
-        lines: List<String>,
-        input: BufferedInputStream
-    ): RTSPRequest {
-        val requestLine = lines[0]
-        val (method, uri, version) = requestLine.split(" ", limit = 3)
-        val headers = parseHeaders(lines.drop(1))
-        val request = RTSPRequest(method, uri, version, headers)
-        val contentLength = request.getContentLength()
-        if (contentLength > 0) {
-            val payloadBytes = ByteArray(contentLength)
-            input.readNBytes(payloadBytes, 0, contentLength)
-            request.payloadBytes = payloadBytes
-        }
-        LOGGER.info("Request: ${request}")
-        return request
-    }
-
-    fun parseHeaders(lines: List<String>): Map<String, String> {
-        return lines.mapNotNull {
-            val parts = it.split(":", limit = 2)
-            if (parts.size == 2) parts[0].trim().lowercase() to parts[1].trim() else null
-        }.toMap()
-    }
-
-    fun handleInfo(request: RTSPRequest): RTSPResponse {
-        if (request.uri == "/info") {
-            val props = mapOf(
-                "deviceid" to "02:11:32:AC:45:00",
-                "features" to "0x5A7FFEE6",
-                "flags" to "0x4",
-                "model" to "AppleTV2,1",
-                "pi" to "2e388006-13ba-4041-9a67-25dd4a43d536",
-                "srcvers" to "220.68",
-                "vv" to "2"
-            )
-
-            val output = ByteArrayOutputStream()
-            for ((key, value) in props) {
-                val data = "$key=$value".toByteArray()
-                output.write(data.size)
-                output.write(data)
-            }
-
-            val dd = NSDictionary()
-            val audioFormatDD = NSDictionary()
-            audioFormatDD.put("bufferStream", NSArray(NSNumber(21), NSNumber(22), NSNumber(23)))
-            dd.put("supportedAudioFormatsExtended", audioFormatDD)
-            val playback = NSDictionary()
-            playback.put("supportsOfflineHLS", NSNumber(false))
-            playback.put("supportsUIForAudioOnlyContent", NSNumber(true))
-            playback.put("supportsFPSSecureStop", NSNumber(true))
-            playback.put("supportsStopAtEndOfQueue", NSNumber(false))
-            playback.put("supportsAirPlayVideoWithSharePlay", NSNumber(true))
-            dd.put("statusFlags", NSNumber(68))
-            dd.put("keepAliveSendStatsAsBody", NSNumber(true))
-            dd.put("name", NSString("Lin Feng's TV"))
-            dd.put("deviceid", NSString(props.get("deviceid")))
-            dd.put("pi", NSString(props.get("pi")))
-            dd.put("txtAirPlay", NSData(output.toByteArray()))
-            val formats = NSDictionary()
-            formats.put("lowLatencyAudioStream", NSNumber(0))
-            formats.put("screenStream", NSNumber(21235712))
-            formats.put("audioStream", NSNumber(21235712))
-            formats.put("bufferStream", NSNumber(14680064))
-            dd.put("supportedFormats", formats)
-            dd.put("sourceVersion", NSString(props.get("srcvers")))
-            dd.put("model", NSString(props.get("model")))
-            dd.put("macAddress", NSString("02:11:32:AC:45:00"))
-            dd.put("features", NSNumber(0x1E shl 32 or 0x5A7FFFF7))
-            dd.put("vv", NSString(props.get("vv")))
-            LOGGER.info("payload: ${dd.toXMLPropertyList()}")
-
-            val payload = BinaryPropertyListWriter.writeToArray(dd)
-
-            val headers = mapOf(
-                HEADER_CSEQ to request.getCSeq(),
-                HEADER_CONTENT_LENGTH to payload.size.toString(),
-                HEADER_CONTENT_TYPE to "application/x-apple-binary-plist",
-                HEADER_SERVER to "AirTunes/220.68"
-            )
-
-            return RTSPResponse(headers, payload).ok()
-        } else {
-            return handleElse(request)
-        }
-    }
-
-    fun readRequestLines(input: InputStream): List<String> {
-        val lines = mutableListOf<String>()
-        val buffer = ByteArrayOutputStream()
-        var prev = 0
-        var curr: Int
-
-        while (true) {
-            curr = input.read()
-            if (curr == -1) break
-
-            if (prev == '\r'.code && curr == '\n'.code) {
-                val line = buffer.toString().trimEnd()
-                if (line.isEmpty()) break
-                lines.add(line)
-                buffer.reset()
-            } else if (curr != '\r'.code) {
-                buffer.write(curr)
-            }
-            prev = curr
-        }
-
-        return lines
+        val payload = (session.keyPair.public as EdDSAPublicKey).abyte
+        val headers = mapOf(
+            Constants.HEADER_CSEQ to request.getCSeq(),
+            Constants.HEADER_CONTENT_LENGTH to payload.size.toString(),
+            Constants.HEADER_CONTENT_TYPE to "application/octet-stream",
+            Constants.HEADER_SERVER to "AirTunes/220.68"
+        )
+        return RTSPResponse(headers, payload).ok()
     }
 
     private fun handleTeardown(request: RTSPRequest): RTSPResponse {
 
         val headers = mapOf(
-            HEADER_CSEQ to request.getCSeq(),
+            Constants.HEADER_CSEQ to request.getCSeq(),
 //            HEADER_SESSION to session.sessionId
         )
         return RTSPResponse(headers).ok()
@@ -334,7 +207,7 @@ class RTSPServer(private val sessionManager: SessionManager, private val executo
     private fun handleRecord(request: RTSPRequest): RTSPResponse {
 
         val headers = mapOf(
-            HEADER_CSEQ to request.getCSeq(),
+            Constants.HEADER_CSEQ to request.getCSeq(),
 //            HEADER_SESSION to session.sessionId
         )
         return RTSPResponse(headers).ok()
@@ -343,18 +216,18 @@ class RTSPServer(private val sessionManager: SessionManager, private val executo
     private fun handleSetup(request: RTSPRequest): RTSPResponse {
 
         val headers = mutableMapOf(
-            HEADER_CSEQ to request.getCSeq(),
+            Constants.HEADER_CSEQ to request.getCSeq(),
 //            HEADER_SESSION to session.sessionId
         )
         val transport = request.getTransport() ?: ""
         if (transport.contains("client_port=5000-5001")) {
             headers.put(
-                HEADER_TRANSPORT,
+                Constants.HEADER_TRANSPORT,
                 "RTP/AVP/UDP;unicast;client_port=5000-5001;server_port=5000-5001"
             )
         } else if (transport.contains("client_port=6000-6001")) {
             headers.put(
-                HEADER_TRANSPORT,
+                Constants.HEADER_TRANSPORT,
                 "RTP/AVP/UDP;unicast;client_port=6000-6001;server_port=6000-6001"
             )
         }
@@ -369,14 +242,14 @@ class RTSPServer(private val sessionManager: SessionManager, private val executo
         }
 
         val headers = mapOf(
-            HEADER_CSEQ to request.getCSeq(),
+            Constants.HEADER_CSEQ to request.getCSeq(),
         )
         return RTSPResponse(headers).ok()
     }
 
     private fun handleElse(request: RTSPRequest): RTSPResponse {
         val headers = mapOf(
-            HEADER_CSEQ to request.getCSeq()
+            Constants.HEADER_CSEQ to request.getCSeq()
         )
         return RTSPResponse(headers).notImplemented()
     }
@@ -398,10 +271,10 @@ class RTSPServer(private val sessionManager: SessionManager, private val executo
 //            response.headers.put(HEADER_APPLE_RESPONSE, encoded)
         }
         var headers = mapOf(
-            HEADER_CSEQ to request.getCSeq(),
-            HEADER_PUBLIC to "OPTIONS, ANNOUNCE, SETUP, RECORD, PAUSE, TEARDOWN, GET, POST, FLUSH, GET_PARAMETER, SET_PARAMETER",
-            HEADER_SERVER to "AirTunes/366.0",
-            HEADER_CONTENT_LENGTH to "0"
+            Constants.HEADER_CSEQ to request.getCSeq(),
+            Constants.HEADER_PUBLIC to "OPTIONS, ANNOUNCE, SETUP, RECORD, PAUSE, TEARDOWN, GET, POST, FLUSH, GET_PARAMETER, SET_PARAMETER",
+            Constants.HEADER_SERVER to "AirTunes/366.0",
+            Constants.HEADER_CONTENT_LENGTH to "0"
         )
 
         return RTSPResponse(headers).ok()
@@ -424,7 +297,7 @@ class RTSPServer(private val sessionManager: SessionManager, private val executo
                     // m=video 5000 RTP/AVP 96
                     // m=audio 5002 RTP/AVP 97
                     if (currentType != null && payloadType != -1) {
-                            MediaTrack(currentType, payloadType, encoding, clockRate, control, fmtp)
+                        MediaTrack(currentType, payloadType, encoding, clockRate, control, fmtp)
                     }
 
                     val parts = line.split(" ")
@@ -467,7 +340,7 @@ class RTSPServer(private val sessionManager: SessionManager, private val executo
 
         // flush final track
         if (currentType != null && payloadType != -1) {
-                MediaTrack(currentType, payloadType, encoding, clockRate, control, fmtp)
+            MediaTrack(currentType, payloadType, encoding, clockRate, control, fmtp)
         }
     }
 
@@ -489,6 +362,72 @@ class RTSPServer(private val sessionManager: SessionManager, private val executo
         val ha2 = md5Hex("$method:$uri")
         return md5Hex("$ha1:$nonce:$ha2")
     }
+
+    private fun rtspRequest(lines: List<String>, input: BufferedInputStream): RTSPRequest {
+        val requestLine = lines[0]
+        val (method, uri, version) = requestLine.split(" ", limit = 3)
+        val headers = parseHeaders(lines.drop(1))
+        val contentLength = headers[Constants.HEADER_CONTENT_LENGTH]?.toInt() ?: 0
+        var payloadBytes: ByteArray? = null
+        if (contentLength > 0) {
+            payloadBytes = ByteArray(contentLength)
+            input.readNBytes(payloadBytes!!, 0, contentLength)
+        }
+        val request = RTSPRequest(method, uri, version, headers, payloadBytes)
+
+        return request
+    }
+
+    private fun parseHeaders(lines: List<String>): Map<String, String> {
+        return lines.mapNotNull {
+            val parts = it.split(":", limit = 2)
+            if (parts.size == 2) parts[0].trim().lowercase() to parts[1].trim() else null
+        }.toMap()
+    }
+
+    private fun readRequestLines(input: InputStream): List<String> {
+        val lines = mutableListOf<String>()
+        val buffer = ByteArrayOutputStream()
+        var prev = 0
+        var curr: Int
+
+        while (true) {
+            curr = input.read()
+            if (curr == -1) break
+
+            if (prev == '\r'.code && curr == '\n'.code) {
+                val line = buffer.toString().trimEnd()
+                if (line.isEmpty()) break
+                lines.add(line)
+                buffer.reset()
+            } else if (curr != '\r'.code) {
+                buffer.write(curr)
+            }
+            prev = curr
+        }
+
+        return lines
+    }
+
+    private fun initCipher(sharedSecret: ByteArray): Cipher {
+        val sha512Digest = MessageDigest.getInstance("SHA-512")
+        sha512Digest.update("Pair-Verify-AES-Key".toByteArray(StandardCharsets.UTF_8))
+        sha512Digest.update(sharedSecret)
+        val sharedSecretSha512AesKey = Arrays.copyOfRange(sha512Digest.digest(), 0, 16)
+
+        sha512Digest.update("Pair-Verify-AES-IV".toByteArray(StandardCharsets.UTF_8))
+        sha512Digest.update(sharedSecret)
+        val sharedSecretSha512AesIV = Arrays.copyOfRange(sha512Digest.digest(), 0, 16)
+
+        val aesCtr128Encrypt = Cipher.getInstance("AES/CTR/NoPadding")
+        aesCtr128Encrypt.init(
+            Cipher.ENCRYPT_MODE,
+            SecretKeySpec(sharedSecretSha512AesKey, "AES"),
+            IvParameterSpec(sharedSecretSha512AesIV)
+        )
+        return aesCtr128Encrypt
+    }
+
 }
 
 private val LOGGER = LoggerFactory.getLogger(RTSPServer::class.java)

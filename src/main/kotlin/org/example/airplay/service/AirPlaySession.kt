@@ -1,23 +1,17 @@
 package org.example.airplay.service
 
 import net.i2p.crypto.eddsa.KeyPairGenerator
-import java.nio.charset.StandardCharsets
 import java.security.InvalidAlgorithmParameterException
 import java.security.InvalidKeyException
-import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
-import java.util.*
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
-import javax.crypto.Cipher
 import javax.crypto.NoSuchPaddingException
-import javax.crypto.spec.IvParameterSpec
-import javax.crypto.spec.SecretKeySpec
 
 class AirPlaySession(var sessionId: String) {
     val rtspStarted = AtomicBoolean(false)
 
-    val keyPair =  KeyPairGenerator().generateKeyPair()
+    val keyPair = KeyPairGenerator().generateKeyPair()
     var peerPubBytes: ByteArray? = null
     var peerSigBytes: ByteArray? = null
     var selfPubBytes: ByteArray? = null
@@ -42,7 +36,6 @@ class AirPlaySession(var sessionId: String) {
         InvalidAlgorithmParameterException::class,
         InvalidKeyException::class
     )
-
 
 
     fun isRTSPStarted(): Boolean {

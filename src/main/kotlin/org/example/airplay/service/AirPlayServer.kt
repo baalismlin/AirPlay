@@ -1,7 +1,6 @@
 package org.example.airplay.service
 
 import org.slf4j.LoggerFactory
-import java.util.UUID
 import java.util.concurrent.SynchronousQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit

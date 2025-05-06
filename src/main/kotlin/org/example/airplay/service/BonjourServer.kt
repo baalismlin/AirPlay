@@ -1,8 +1,7 @@
 package org.example.airplay.service
 
-import org.example.airplay.common.MDNS_SERVICE_TYPE
-import org.example.airplay.common.RTSP_PORT
-import org.example.airplay.util.txtAirPlayProps
+import org.example.airplay.common.Constants
+import org.example.airplay.util.PropertyHelper
 import org.slf4j.LoggerFactory
 import java.net.Inet4Address
 import java.net.InetAddress
@@ -15,7 +14,7 @@ import javax.jmdns.ServiceInfo
 class BonjourServer() {
     private lateinit var jmdns: JmDNS
 
-    fun start(deviceName: String = "AirPlayTV") {
+    fun start() {
         try {
             var ip = InetAddress.getLocalHost()
             if (ip.isLoopbackAddress) {
@@ -31,16 +30,16 @@ class BonjourServer() {
             jmdns = JmDNS.create(ip)
 
             val serviceInfo = ServiceInfo.create(
-                MDNS_SERVICE_TYPE,
-                deviceName,
-                RTSP_PORT,  // RTSP 监听端口
+                Constants.MDNS_SERVICE_TYPE,
+                Constants.NAME,
+                Constants.RTSP_PORT,  // RTSP 监听端口
                 0,
                 0,
-                txtAirPlayProps()
+                PropertyHelper.txtAirPlayProps()
             )
 
             jmdns.registerService(serviceInfo)
-            LOGGER.info("Bonjour service started as $deviceName on port ${RTSP_PORT}")
+            LOGGER.info("Bonjour service started as ${Constants.NAME} on port ${Constants.RTSP_PORT}")
 
         } catch (e: Exception) {
             LOGGER.error("Bonjour error: ${e.message}")

@@ -1,30 +1,30 @@
 plugins {
-    id 'org.jetbrains.kotlin.jvm' version '2.0.0'
+  id 'org.jetbrains.kotlin.jvm' version '2.0.0'
 }
 
 group = 'org.example'
 version = '1.0-SNAPSHOT'
 
 repositories {
-    mavenCentral()
+  mavenCentral()
 }
 
 dependencies {
-    implementation 'org.jmdns:jmdns:3.6.1'
-    implementation 'org.slf4j:slf4j-api:2.0.16'
-    implementation 'org.slf4j:slf4j-simple:2.0.16'
-    implementation 'com.googlecode.plist:dd-plist:1.28'
-    implementation 'org.pcap4j:pcap4j-core:1.8.2'
-    implementation 'org.pcap4j:pcap4j-packetfactory-static:1.8.2'
-    implementation "net.i2p.crypto:eddsa:0.3.0"
-    implementation 'org.whispersystems:curve25519-java:0.5.0'
-    implementation "org.bouncycastle:bcprov-jdk18on:1.80"
-    testImplementation 'org.jetbrains.kotlin:kotlin-test'
+  implementation 'org.jmdns:jmdns:3.6.1'
+  implementation 'org.slf4j:slf4j-api:2.0.16'
+  implementation 'org.slf4j:slf4j-simple:2.0.16'
+  implementation 'com.googlecode.plist:dd-plist:1.28'
+  implementation 'org.pcap4j:pcap4j-core:1.8.2'
+  implementation 'org.pcap4j:pcap4j-packetfactory-static:1.8.2'
+  implementation "net.i2p.crypto:eddsa:0.3.0"
+  implementation 'org.whispersystems:curve25519-java:0.5.0'
+  implementation "org.bouncycastle:bcprov-jdk18on:1.80"
+  testImplementation 'org.jetbrains.kotlin:kotlin-test'
 }
 
 test {
-    useJUnitPlatform()
+  useJUnitPlatform()
 }
 kotlin {
-    jvmToolchain(17)
+  jvmToolchain(17)
 }
